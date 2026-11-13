@@ -1712,7 +1712,8 @@ function render(now){
   const locked=inputLocked(now);
   tiles.forEach((button,i)=>{
     const reserved=pickupReserved(i);
-    button.textContent=game.letters[i]||'';
+    const label=game.letters[i]||'';
+    if(button.textContent!==label)button.textContent=label;
     button.classList.toggle('empty',!game.letters[i]);
     button.classList.toggle('queued',reserved);
     button.disabled=locked||game.hidden||reserved||!game.letters[i];
