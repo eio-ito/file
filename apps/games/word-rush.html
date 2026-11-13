@@ -689,7 +689,7 @@ function screen(name) {
   document.documentElement.classList.toggle('battle-active',name==='battle');
   for (const panel of ['title','modes','select','battle','review','rank']) byId(panel).hidden = name !== panel;
 }
-function crop(source, box, sourceWidth, sourceHeight, cutout=true) {
+function crop(source, box, sourceWidth, sourceHeight, cutout=true, backgroundSeeds=[], shadowStart=Infinity) {
   const [x,y,w,h] = box;
   const canvas = document.createElement('canvas');
   canvas.width=w;canvas.height=h;
@@ -706,10 +706,15 @@ function crop(source, box, sourceWidth, sourceHeight, cutout=true) {
     if (seen[index]) return;
     seen[index]=1;
     const i=index*4;
-    if(data[i]>220 && data[i+1]>199 && data[i+2]>170 && data[i]-data[i+2]<65) queue[tail++]=index;
+    const [red,green,blue]=[data[i],data[i+1],data[i+2]];
+    const background=red>220 && green>199 && blue>170 && red-blue<65;
+    // The human victory images contain a beige ground shadow below the boots.
+    const shadow=index>=shadowStart*w && red>=200 && green>=177 && blue>=151 && red-blue<70;
+    if(background||shadow)queue[tail++]=index;
   }
   for(let x=0;x<w;x++){seed(x);seed((h-1)*w+x);}
   for(let y=0;y<h;y++){seed(y*w);seed(y*w+w-1);}
+  for(const [x,y] of backgroundSeeds)seed(y*w+x);
   while(head<tail){
     const i=queue[head++];
     data[i*4+3]=0;
@@ -798,9 +803,12 @@ function prepareArt() {
     throw:crop(art.hero,[700,959,121,173],1024,1536),
     hit:crop(art.hero,[54,1219,209,271],1024,1536),
     down:crop(art.hero,[365,1320,287,168],1024,1536),
-    win:crop(art.hero,[762,1224,166,262],1024,1536)
+    win:crop(art.hero,[762,1224,166,262],1024,1536,true,[[86,233]],248)
   };
-  sprites.C={idle:crop(art.choices,[1120,150,430,726],1752,897)};
+  sprites.C={
+    idle:crop(art.choices,[1120,150,430,726],1752,897),
+    win:crop(art.choices,[1120,150,430,726],1752,897,true,[],660)
+  };
   sprites.A.crouch=crop(art.crouch,[218,124,507,731],1774,887,false);
   sprites.C.crouch=crop(art.crouch,[971,124,555,731],1774,887,false);
   for(const [hero,y] of [['A',15],['C',533]]){
