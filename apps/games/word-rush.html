@@ -1474,12 +1474,12 @@ function prepareArt() {
   sprites.C={idle:miraFrames[0],run:miraFrames[1],pickup:miraFrames[2],carry:miraFrames[3],
     swap:miraFrames[4],away:miraFrames[5],crouch:miraFrames[6],emerge:miraFrames[7],
     throw:miraFrames[8],hit:miraFrames[9],down:miraFrames[10],win:miraFrames[11],
-    walk:[miraFrames[1],miraFrames[5]],shake:[miraFrames[3],miraFrames[4],miraFrames[3]]};
+    shake:[miraFrames[3],miraFrames[4],miraFrames[3]]};
   for(const [hero,y] of [['A',15]]){
     sprites[hero].shake=[72,565,1062].map(x=>crop(art.shake,[x,y,368,458],1536,1024,false));
   }
   const walkColumns=[189,470,755,1038,1321,1605];
-  for(const [hero,y] of [['A',20]]){
+  for(const [hero,y] of [['A',20],['C',462]]){
     sprites[hero].walk=walkColumns.map(x=>crop(art.walk,[x-121,y,242,394],1774,887,false));
   }
   const shiroFrames=spriteGrid(art.shiroSheet,3,4).map(removeTinyAlphaSpecks);
@@ -2246,6 +2246,8 @@ function damageExposedHero(now){
   if(game.mode!=='fight'||game.attackHit||game.hidden||game.protectedAttack)return;
   game.attackHit=true;
   game.lives--;
+  const headHeight=game.hero==='D'?46:68;
+  game.damageNotice={at:now,x:game.position.x,y:game.position.y-headHeight-8};
   game.down=true;
   cancelPickup();
   if(game.lives===0){
@@ -2717,6 +2719,7 @@ function drawBattle(now,state){
     ctx.restore();
   }
   drawDamagePopups(now);
+  drawHeroDamagePopup(now);
   ctx.restore();
 }
 const heroMasks=new WeakMap();
@@ -2738,6 +2741,28 @@ function drawProtectedHero(sprite,x,y,height){
   ctx.save();
   ctx.globalAlpha=.34;
   drawAt(ctx,mask,x,y,height);
+  ctx.restore();
+}
+function drawHeroDamagePopup(now){
+  const hit=game.damageNotice;
+  if(!hit)return;
+  const elapsed=now-hit.at;
+  const duration=1000;
+  if(elapsed<0||elapsed>=duration)return;
+  const progress=elapsed/duration;
+  const x=hit.x;
+  const y=hit.y-16*progress;
+  ctx.save();
+  ctx.globalAlpha=Math.min(1,(1-progress)*4);
+  ctx.font='900 22px system-ui';
+  ctx.textAlign='center';
+  ctx.textBaseline='bottom';
+  ctx.lineJoin='round';
+  ctx.lineWidth=5;
+  ctx.strokeStyle='#fff9ed';
+  ctx.fillStyle='#b32937';
+  ctx.strokeText('−1 ♥',x,y);
+  ctx.fillText('−1 ♥',x,y);
   ctx.restore();
 }
 function drawDamagePopups(now){
