@@ -247,7 +247,8 @@ html.battle-active,html.battle-active body{
 <button id="rankOpen" class="secondary wide rank-open">ランキングをもっと見る</button>
 <footer class="title-footer">
   <span>© 2026 ito eio</span>
-  <a href="https://linktr.ee/itoeio" target="_blank" rel="noopener noreferrer">作者のリンク集</a>
+  <a href="https://eioito.blogspot.com" data-game-link="blogger" target="_blank" rel="noopener noreferrer">ゲーム・英語教材</a>
+  <a href="https://linktr.ee/itoeio" data-game-link="linktree" target="_blank" rel="noopener noreferrer">作者のリンク集</a>
   <a class="social-link" href="https://x.com/itoeio" aria-label="Xのitoeioプロフィール" title="X" target="_blank" rel="noopener noreferrer">
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3l-5-7.4L5.4 22H2.2l7.3-8.4L.8 2h6.5l4.5 6.7L18.9 2ZM17.8 20h1.7L6.3 3.9H4.5L17.8 20Z"/></svg>
   </a>
@@ -1598,6 +1599,8 @@ function begin(hero,boss=1,lives=3,priorTime=0,sentenceIndex=0,sentenceOrder=cre
   game={hero,boss,maxHp,hp:maxHp,lives,start:now,priorTime,level:selectedMode,sentenceOrder,mode:'fight',position:{...home},
     movement:null,pickupQueue:[],hidden:false,down:false,lockedUntil:0,wrongIndex:-1,volley:null,ammo:[],damagePopups:[],coverSparks:[],seenSentences:new Set(),notice:'',poseUntil:0};
   game.heartSupport=createHeartSupport(game);
+  if(boss===1&&priorTime===0)trackGameEvent('game_start',{mode:selectedMode,hero});
+  trackGameEvent('level_start',{mode:selectedMode,hero,level:boss});
   setSentence(sentenceIndex);reload();phase('charge',now);
   ui.overlay.hidden=true;
   screen('battle');
@@ -2357,6 +2360,11 @@ function drawClearPetals(elapsed){
 }
 function startVictory(now){
   const final=!hasNextBoss();
+  const elapsedMs=Math.round(game.finishedAt-game.start);
+  trackGameEvent('level_end',{mode:game.level,hero:game.hero,level:game.boss,success:true,time_ms:elapsedMs});
+  if(final)trackGameEvent('game_complete',{
+    mode:game.level,hero:game.hero,time_ms:Math.round(game.priorTime+elapsedMs)
+  });
   game.clearPetals=Array.from({length:final?65:37},(_,index)=>({
     x:Math.random()*400, delay:Math.random()*.86,
     speed:105+Math.random()*160, drift:Math.random()*55-27,
@@ -3011,6 +3019,43 @@ const firebaseConfig={
   projectId:'itoeioapps',
   appId:'1:8442271924:web:067f0e963ffe16ab0d9fe1'
 };
+// Analytics is enabled only for the published game URL.
+let gameAnalytics;
+function connectGameAnalytics(){
+  const published=typeof location!=='undefined'
+    && location.protocol==='https:'
+    && location.hostname==='eio-ito.github.io'
+    && location.pathname==='/file/apps/games/word-rush.html';
+  if(!published)return Promise.resolve(null);
+  gameAnalytics??=Promise.all([
+    import('https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/13.2.0/firebase-analytics.js')
+  ]).then(async ([app,analytics])=>{
+    if(!await analytics.isSupported())return null;
+    const instance=app.getApps().find(item=>item.name==='[DEFAULT]')
+      ??app.initializeApp(firebaseConfig);
+    const tracker=analytics.initializeAnalytics(instance,{
+      config:{allow_google_signals:false,allow_ad_personalization_signals:false}
+    });
+    return {tracker,logEvent:analytics.logEvent};
+  }).catch(error=>{
+    console.debug('Usage measurement unavailable',error);
+    return null;
+  });
+  return gameAnalytics;
+}
+function trackGameEvent(event,parameters){
+  void connectGameAnalytics().then(analytics=>{
+    if(analytics)analytics.logEvent(analytics.tracker,event,{game_name:'word_rush',...parameters});
+  }).catch(error=>console.debug('Usage event unavailable',error));
+}
+document.querySelectorAll('[data-game-link]').forEach(link=>{
+  link.addEventListener('click',()=>trackGameEvent('game_link_click',{
+    link_name:link.dataset.gameLink
+  }));
+});
+void connectGameAnalytics();
+
 const scoreCollection='wordRushScores';
 // Keep these limits aligned with firestore.rules.
 const rankCapacityLimit=50000;
