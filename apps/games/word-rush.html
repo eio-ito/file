@@ -1459,7 +1459,10 @@ function bossFrames(boss){
 }
 
 function defeatedFrame(boss){
-  return sprites.defeated[boss]??=removeTinyAlphaSpecks(spriteFrame(art.bossDefeated,4,3,boss-1));
+  const sheet=art.bossDefeated;
+  // The beetle and plant have unequal spacing in the first row.
+  const edges=[[0,362,720,1062,1448].map(x=>Math.round(x*sheet.naturalWidth/1448))];
+  return sprites.defeated[boss]??=removeTinyAlphaSpecks(spriteFrame(sheet,4,3,boss-1,edges));
 }
 
 function prepareArt() {
@@ -1746,7 +1749,7 @@ function swap(now){
 }
 function attack(now){
   if(inputLocked(now)||game.movement||game.hidden||!game.ammo.length)return;
-  if(game.phase==='attack'&&!game.attackHit&&flameSweepActive(now)&&![5,9].includes(game.attackPattern)){
+  if(game.phase==='attack'&&!game.attackHit&&flameSweepActive(now)&&game.attackPattern!==9){
     game.protectedAttack=true;
   }
   const letters=[...game.ammo.splice(0).join('')];
@@ -2671,8 +2674,8 @@ function drawBattle(now,state){
   const bounce=game.movement?Math.abs(Math.sin(now/48))*5:0;
   ctx.save();
   if(game.down && Math.floor(now/160)%2===0)ctx.filter='sepia(1) saturate(7) hue-rotate(315deg)';
-  if(game.hero==='C' && !game.hidden && (game.down||game.movement||game.volley)){
-    ctx.translate(p.x,p.y);ctx.rotate(game.down?-.95:game.volley?-.14:Math.sin(now/75)*.10);ctx.translate(-p.x,-p.y);
+  if(game.hero==='C' && !game.hidden && !game.down && (game.movement||game.volley)){
+    ctx.translate(p.x,p.y);ctx.rotate(game.volley?-.14:Math.sin(now/75)*.10);ctx.translate(-p.x,-p.y);
   }
   if(victoryTime>=fallDuration){
     const jump=Math.max(0,Math.sin((victoryTime-fallDuration)/105))*20;
@@ -2692,6 +2695,7 @@ function drawBattle(now,state){
     drawProtectedHero(sprites[game.hero].crouch,p.x,p.y,game.hero==='D'?34:49);
   }else{
     let height=key==='crouch'?59:game.mode==='lost'&&game.hero==='A'?40:68;
+    if(key==='down'&&game.hero==='C')height=Math.min(36,85*hero.height/hero.width);
     if(game.hero==='D'){
       height=Math.round(height*.67);
       if(key==='hit')height=36;
