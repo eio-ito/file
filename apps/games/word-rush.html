@@ -233,6 +233,8 @@ html.battle-active,html.battle-active body{
   border:1px solid var(--border);
   border-radius:10px;
 }
+.notice #quitGame{margin-left:8px;margin-top:12px}
+#detail{white-space:pre-line}
 </style>
 </head>
 <body>
@@ -300,7 +302,7 @@ html.battle-active,html.battle-active body{
 <div id="feedback" class="feedback" role="status" hidden></div>
 <div id="tiles" class="tiles" aria-label="文字ブロックと入れ替え"><button id="swap" class="secondary swap">入れ替え</button></div>
 <div id="clearBanner" class="clear-banner" hidden><strong lang="en"></strong><span></span></div>
-<div id="overlay" class="shade" hidden><div class="notice"><h2 id="result"></h2><p id="detail"></p><button id="restart" class="primary">タイトルへ</button></div></div>
+<div id="overlay" class="shade" hidden><div class="notice"><h2 id="result"></h2><p id="detail"></p><button id="restart" class="primary">タイトルへ</button><button id="quitGame" type="button" class="secondary" hidden>タイトルへ</button></div></div>
 </div>
 <div class="word" aria-label="文字の進捗"><span id="done" class="done"></span><span id="current" class="current"></span></div>
 <div class="controls"><button id="attack" class="primary attack" disabled>攻撃</button><button id="hide" class="hide" type="button" aria-pressed="false"><span id="hideLabel">隠れる</span><small>押している間</small></button></div>
@@ -1595,16 +1597,18 @@ function setArenaResolution(boss){
   ui.arena.height=arenaHeight*scale;
   ctx.setTransform(scale,0,0,scale,0,0);
 }
-function begin(hero,boss=1,lives=3,priorTime=0,sentenceIndex=0,sentenceOrder=createSentenceOrder(selectedMode)) {
+function begin(hero,boss=1,lives=3,priorTime=0,sentenceIndex=0,sentenceOrder=createSentenceOrder(selectedMode),continuesLeft=3) {
   setArenaResolution(boss);
   const now=performance.now();
   const maxHp=bossHp(boss,selectedMode);
-  game={hero,boss,maxHp,hp:maxHp,lives,start:now,priorTime,level:selectedMode,sentenceOrder,mode:'fight',position:{...home},
+  game={hero,boss,maxHp,hp:maxHp,lives,start:now,priorTime,level:selectedMode,sentenceOrder,continuesLeft,mode:'fight',position:{...home},
     movement:null,pickupQueue:[],hidden:false,down:false,lockedUntil:0,wrongIndex:-1,volley:null,ammo:[],damagePopups:[],coverSparks:[],seenSentences:new Set(),notice:'',poseUntil:0};
   game.heartSupport=createHeartSupport(game);
   if(boss===1&&priorTime===0)trackGameEvent('game_start',{mode:selectedMode,hero});
   trackGameEvent('level_start',{mode:selectedMode,hero,level:boss});
-  setSentence(sentenceIndex);reload();phase('charge',now);
+  setSentence(sentenceIndex);
+  game.stageStartSentenceIndex=game.sentenceIndex;
+  reload();phase('charge',now);
   ui.overlay.hidden=true;
   screen('battle');
   window.scrollTo(0,0);
@@ -1761,7 +1765,16 @@ function finish(title,detail='',button='タイトルへ') {
   ui.detail.textContent=detail;
   ui.detail.hidden=!detail;
   ui.restart.textContent=button;
+  byId('quitGame').hidden=game?.mode!=='lost'||game.continuesLeft===0;
   ui.overlay.hidden=false;
+}
+function continueGame(now){
+  if(game?.mode!=='lost'||game.continuesLeft<=0)return;
+  const {hero,boss,level,sentenceOrder,stageStartSentenceIndex,continuesLeft}=game;
+  const priorTime=game.priorTime+game.finishedAt-game.start+60000;
+  selectedMode=level;
+  begin(hero,boss,3,priorTime,stageStartSentenceIndex,sentenceOrder,continuesLeft-1);
+  byId('quitGame').hidden=true;
 }
 function hasNextBoss(){
   return game.boss<modes[game.level].lastBoss;
@@ -2259,7 +2272,13 @@ function damageExposedHero(now){
   if(game.lives===0){
     game.mode='lost';
     game.finishedAt=now;
-    finish('ゲームオーバー','経過時間 '+timeLabel(game.priorTime+now-game.start));
+    if(game.continuesLeft>0){
+      finish('コンティニューしますか？',
+        'クリアタイムに＋1分加算されます。\n残りコンティニュー '+game.continuesLeft+'回',
+        'コンティニュー');
+    }else{
+      finish('ゲームオーバー','コンティニューを3回使い切りました。');
+    }
   }
 }
 function advanceVolley(now){
@@ -2940,12 +2959,22 @@ ui.start.addEventListener('click',()=>screen('modes'));
 ui.modeBack.addEventListener('click',()=>screen('title'));
 ui.back.addEventListener('click',()=>screen('modes'));
 ui.restart.addEventListener('click',()=>{
+  if(game?.mode==='lost'&&game.continuesLeft>0){
+    continueGame(performance.now());
+    return;
+  }
   if(game?.mode==='preview'){
-    begin(game.hero,game.boss,game.lives,game.priorTime+game.finishedAt-game.start,game.sentenceIndex,game.sentenceOrder);
+    begin(game.hero,game.boss,game.lives,game.priorTime+game.finishedAt-game.start,game.sentenceIndex,game.sentenceOrder,game.continuesLeft);
     return;
   }
   game=null;
   screen('title');
+});
+byId('quitGame').addEventListener('click',()=>{
+  if(game?.mode!=='lost')return;
+  game=null;
+  screen('title');
+  window.scrollTo(0,0);
 });
 ui.next.addEventListener('click',()=>{
   if(game?.mode!=='review'||ui.next.hidden)return;
