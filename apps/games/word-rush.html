@@ -235,6 +235,12 @@ html.battle-active,html.battle-active body{
 }
 .notice #quitGame{margin-left:8px;margin-top:12px}
 #detail{white-space:pre-line}
+.newsletter-card{margin:16px 0 0;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:#edf1e7;text-align:left}
+.newsletter-card h2{margin:0;font-size:16px;line-height:1.5;color:var(--green)}
+.menu .newsletter-card p{margin:6px 0 8px;font-size:12px;line-height:1.7;color:var(--muted)}
+.newsletter-card a{display:inline-block;padding:6px 0;color:var(--green);font-size:13px;font-weight:800;text-underline-offset:3px}
+.newsletter-card a:focus-visible{outline:2px solid var(--green);outline-offset:3px;border-radius:3px}
+.newsletter-card small{display:block;margin-top:2px;font-size:11px;line-height:1.6;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -247,9 +253,15 @@ html.battle-active,html.battle-active body{
 <button id="howToPlayOpen" type="button" aria-controls="howToPlay">遊び方</button>
 <div class="home-card"><h2 id="homeRankHeading">今週のTOP 3 · Easy</h2><p id="homeRankStatus" role="status">読み込み中…</p><ol id="homeRankList" class="rank-list"></ol></div>
 <button id="rankOpen" class="secondary wide rank-open">ランキングをもっと見る</button>
+<aside class="newsletter-card" aria-labelledby="newsletterHeading">
+  <h2 id="newsletterHeading">これからも、英語を楽しむ。</h2>
+  <p>新しい英語ゲームや無料教材、新刊・セールのお知らせをメールでお届けします。</p>
+  <a href="https://www.itopera.com/p/blog-page_25.html" data-game-link="newsletter" target="_blank" rel="noopener noreferrer">メール配信のご案内 <span aria-hidden="true">→</span></a>
+  <small>無料・不定期配信・いつでも登録解除可能</small>
+</aside>
 <footer class="title-footer">
   <span>© 2026 ito eio</span>
-  <a href="https://eioito.blogspot.com" data-game-link="blogger" target="_blank" rel="noopener noreferrer">ゲーム・英語教材</a>
+  <a href="https://www.itopera.com/" data-game-link="blogger" target="_blank" rel="noopener noreferrer">ゲーム・英語教材</a>
   <a href="https://linktr.ee/itoeio" data-game-link="linktree" target="_blank" rel="noopener noreferrer">作者のリンク集</a>
   <a class="social-link" href="https://x.com/itoeio" aria-label="Xのitoeioプロフィール" title="X" target="_blank" rel="noopener noreferrer">
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3l-5-7.4L5.4 22H2.2l7.3-8.4L.8 2h6.5l4.5 6.7L18.9 2ZM17.8 20h1.7L6.3 3.9H4.5L17.8 20Z"/></svg>
