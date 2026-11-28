@@ -1409,9 +1409,9 @@ function spriteGrid(source,columns,rows,columnEdges){
 function spriteFrame(source,columns,rows,index,columnEdges){
   const column=index%columns;
   const row=Math.floor(index/columns);
-  const x=columnEdges?.[row][column]??Math.round(column*source.naturalWidth/columns);
+  const x=columnEdges?.[row]?.[column]??Math.round(column*source.naturalWidth/columns);
   const y=Math.round(row*source.naturalHeight/rows);
-  const w=(columnEdges?.[row][column+1]??Math.round((column+1)*source.naturalWidth/columns))-x;
+  const w=(columnEdges?.[row]?.[column+1]??Math.round((column+1)*source.naturalWidth/columns))-x;
   const h=Math.round((row+1)*source.naturalHeight/rows)-y;
   const cell=crop(source,[x,y,w,h],source.naturalWidth,source.naturalHeight,false);
   const context=cell.getContext('2d');
